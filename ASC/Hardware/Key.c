@@ -12,18 +12,14 @@ uint8_t Key_Num;
 void Key_Init(void)
 {
 	/*开启时钟*/
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);	//开启GPIOA的时钟
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);	//开启GPIOB的时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);	//开启GPIOA的时
 	
 	/*GPIO初始化*/
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);					//将PB10和PB11引脚初始化为上拉输入
-	
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_12;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);					//将PA11和PA12引脚初始化为上拉输入
+	GPIO_Init(GPIOA, &GPIO_InitStructure);					//将PB10和PB11引脚初始化为上拉输入
 }
 
 /**
@@ -51,21 +47,9 @@ uint8_t Key_GetNum(void)
   */
 uint8_t Key_GetState(void)
 {
-	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_10) == 0)		//如果PB10引脚电平为0
+	if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0) == 0)		//如果PB10引脚电平为0
 	{
 		return 1;		//直接返回键码1
-	}
-	if (GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11) == 0)		//如果PB11引脚电平为0
-	{
-		return 2;		//直接返回键码2
-	}
-	if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11) == 0)		//如果PA11引脚电平为0
-	{
-		return 3;		//直接返回键码3
-	}
-	if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_12) == 0)		//如果PA12引脚电平为0
-	{
-		return 4;		//直接返回键码4
 	}
 	return 0;			//没有if成立，表示没有按键按下，默认返回0
 }
