@@ -10,8 +10,8 @@
 #include "Serial.h"
 
 float Target, Actual, Out;
-float Kp = 0.2, Ki = 0.2, Kd = 0;
-float Error0, Error1, Errorint;
+float Kp = 0.3, Ki = 0.2, Kd = 0.5;
+float Error0, Error1, Error2;
 
 /*电机测试*/
 /*下载此段程序后，按下K1，电机速度增加，按下K2，电机速度减小，按下K3，电机停止*/
@@ -28,7 +28,7 @@ int main(void)
 	Encoder_Init();	
 	Serial_Init();	
 	
-	OLED_Printf(0, 0, OLED_8X16, "Speed Control");
+	OLED_Printf(0, 0, OLED_8X16, "Location Control");
 	OLED_Update();
 	while (1)
 	{
@@ -69,13 +69,13 @@ void TIM1_UP_IRQHandler(void)
 		if (Count >= 40)
 		{
 			 Count = 0;
-			speed = Encoder_Get();
+			speed += Encoder_Get();
 			Actual = speed;
+			Error2 = Error1;
 			Error1 = Error0;
 			Error0 = Target - Actual;
-			Errorint += Error0;
 			
-			Out = Kp * Error0 + Ki * Errorint + Kd * (Error0 - Error1);
+			Out += Kp * (Error0 - Error1) + Ki * Error0 + Kd * (Error0 - 2 * Error1 + Error2);
 			if (Out > 100) {Out = 100;}
 			if (Out < -100) {Out = -100;}
 			
