@@ -68,7 +68,7 @@ int main(void)
 		}
     if (Serial_RxFlag == 1)		//如果接收到数据包
 		{
-		   speed = Extract_Speed_Value((const char*)Serial_RxPacket[100]) * 3 * 20;
+		   speed = Extract_Speed_Value((const char*)Serial_RxPacket) * 3 * 20;
 			  Serial_RxFlag = 0;
 		}
 		OLED_Printf(0, 0, OLED_8X16, "Motor2:%+05.0f", Encoder2_Get());	
@@ -123,9 +123,9 @@ void TIM1_UP_IRQHandler(void)
 			/*使用增量式PID公式，计算得到输出值*/
 			Out1 += Kp * (Error0 - Error1) + Ki * Error0 + Kd * (Error0 - 2 * Error1 + Error2);
 			Out2 += Kp * (E0 - E1) + Ki * E0 + Kd * (E0 - 2 * E1 + E2);
-			if (E0 == 0.0f)
+			if ( E0 == 0.0f)
 			{
-				Out2 = 0.0f;
+				Out2 = 0;
 			}
 			/*输出限幅*/
 			if (Out1 > 100) {Out1 = 100;}		//限制输出值最大为100

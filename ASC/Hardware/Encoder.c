@@ -17,7 +17,7 @@ void Encoder1_Init(void)
     TIM_TimeBaseInitStructure.TIM_Prescaler = 0;
     TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
     TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStructure);
-    TIM_EncoderInterfaceConfig(TIM3, TIM_EncoderMode_TI12, TIM_ICPolarity_Rising, TIM_ICPolarity_Falling);
+    TIM_EncoderInterfaceConfig(TIM3, TIM_EncoderMode_TI12, TIM_ICPolarity_Rising, TIM_ICPolarity_Rising);
     TIM_SetCounter(TIM3, 0);
     TIM_Cmd(TIM3, ENABLE);
 }
@@ -39,7 +39,7 @@ void Encoder2_Init(void)
     TIM_TimeBaseInitStructure.TIM_Prescaler = 0;
     TIM_TimeBaseInitStructure.TIM_RepetitionCounter = 0;
     TIM_TimeBaseInit(TIM4, &TIM_TimeBaseInitStructure);
-    TIM_EncoderInterfaceConfig(TIM4, TIM_EncoderMode_TI12, TIM_ICPolarity_Rising, TIM_ICPolarity_Falling);
+    TIM_EncoderInterfaceConfig(TIM4, TIM_EncoderMode_TI12, TIM_ICPolarity_Rising, TIM_ICPolarity_Rising);
     TIM_SetCounter(TIM4, 0);
     TIM_Cmd(TIM4, ENABLE);
 }
