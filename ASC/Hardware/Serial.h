@@ -12,5 +12,7 @@ void Serial_Printf(char *format, ...);
 
 uint8_t Serial_GetRxFlag(void);
 uint8_t Serial_GetRxData(void);
+extern char Serial_RxPacket[];
+extern uint8_t Serial_RxFlag;
 
 #endif

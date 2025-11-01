@@ -8,16 +8,44 @@
 #include "Motor.h"
 #include "Encoder.h"
 #include "Serial.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>                
+#include <string.h>  
 
-float Target, Actual, Out;
+float Target, Actual, Out1, Out2, Act;
 float Kp = 0.5f, Ki = 0.1f, Kd = 0.0f;
-float Error0, Error1, Error2;
+float Error0, Error1, Error2, E0, E1, E2;
 
 /*电机测试*/
 /*下载此段程序后，按下K1，电机速度增加，按下K2，电机速度减小，按下K3，电机停止*/
 uint8_t KeyNum;
 int16_t PWM;
-int16_t speed;
+float speed =  0.0f;  //-180 ~ 180
+
+float Extract_Speed_Value(const char* packet)
+{
+    char* percent_ptr = strchr(packet, '%');  // 查找%位置
+    if (percent_ptr != NULL)
+    {
+        // %后面的第一个字符开始
+        char* number_start = percent_ptr + 1;
+        
+        // 跳过可能的前导空格
+        while (*number_start == ' ') {
+            number_start++;
+        }
+        
+        // 提取数字
+        if (*number_start >= '0' && *number_start <= '9' || *number_start == '-')
+        {
+            return atof(number_start);
+        }
+    }
+    
+    return 0.0f;
+}
+
 int main(void)
 {
 	/*模块初始化*/
@@ -25,10 +53,10 @@ int main(void)
 	Key_Init();			//非阻塞式按键初始化
 	Motor_Init();		//电机初始化
 	Timer_Init();		//定时器初始化，1ms定时中断一次
-	Encoder_Init();	
-	Serial_Init();	
-	
-	OLED_Printf(0, 0, OLED_8X16, "考核任务");
+	Encoder2_Init();	
+	Serial_Init();
+  Encoder1_Init();	
+
 	OLED_Update();
 	while (1)
 	{
@@ -38,22 +66,21 @@ int main(void)
 			Target += 10;				//PWM变量加10
 			
 		}
-		if (KeyNum == 2)			//如果K2按下
+    if (Serial_RxFlag == 1)		//如果接收到数据包
 		{
-			Target -= 10;				//PWM变量减10
+		   speed = Extract_Speed_Value((const char*)Serial_RxPacket[100]) * 3 * 20;
+			  Serial_RxFlag = 0;
 		}
-		if (KeyNum == 3)			//如果K3按下
-		{
-			Target = 0;				//PWM变量归0
-		}
+		OLED_Printf(0, 0, OLED_8X16, "Motor2:%+05.0f", Encoder2_Get());	
+		OLED_Printf(0, 16, OLED_8X16, "Tar:%+05.0f", Target);	
+		OLED_Printf(0, 32, OLED_8X16, "Act:%+05.0f", Actual);	
+		OLED_Printf(0, 48, OLED_8X16, "Out:%+05.0f", Out1);	
+    
+    // 提取速度值
+    speed = Extract_Speed_Value((const char*)Serial_RxPacket);		
+	  OLED_Update();
 		
-		
-		OLED_Printf(0, 16, OLED_8X16, "Tar:%+04.0f", Target);		//OLED显示PWM变量值
-		OLED_Printf(0, 32, OLED_8X16, "Act:%+04.0f", Actual);	
-		OLED_Printf(0, 48, OLED_8X16, "Out:%+04.0f", Out);		
-	  OLED_Update();		//OLED更新
-		
-		Serial_Printf("%f, %f, %f\r\n", Target, Actual, Out);
+		Serial_Printf("%f, %f, %f\r\n", Target, Actual, Act);
 	}
 }
 
@@ -70,7 +97,7 @@ void TIM1_UP_IRQHandler(void)
 		
 		/*计次分频*/
 		Count ++;				//计次自增
-		if (Count >= 10)		//如果计次40次，则if成立，即if每隔40ms进一次
+		if (Count >= 10)		//如果计次10次，则if成立，即if每隔10ms进一次
 		{
 			Count = 0;			//计次清零，便于下次计次
 			
@@ -81,27 +108,37 @@ void TIM1_UP_IRQHandler(void)
 			/*如果只需要得到编码器的位置，而不需要得到速度*/
 			/*则Encode_Get函数内部的代码可以修改为return TIM_GetCounter(TIM3);直接返回CNT计数器的值*/
 			/*修改后，此处代码改为Actual = Encoder_Get();直接得到位置，就不再需要累加了，这样更直接*/
-			Actual += Encoder_Get() * 3; 
-			
+			Actual += Encoder1_Get() * 3;
+			Target += speed;
 			/*获取本次误差、上次误差和上上次误差*/
 			Error2 = Error1;			//获取上上次误差
 			Error1 = Error0;			//获取上次误差
 			Error0 = Target - Actual;	//获取本次误差，目标值减实际值，即为误差值
+			Act += Encoder2_Get() * 3;
 			
+			E2 = E1;			//获取上上次误差
+			E1 = E0;			//获取上次误差
+			E0 = Actual - Act;
 			/*PID计算*/
 			/*使用增量式PID公式，计算得到输出值*/
-			Out += Kp * (Error0 - Error1) + Ki * Error0 + Kd * (Error0 - 2 * Error1 + Error2);
-			
+			Out1 += Kp * (Error0 - Error1) + Ki * Error0 + Kd * (Error0 - 2 * Error1 + Error2);
+			Out2 += Kp * (E0 - E1) + Ki * E0 + Kd * (E0 - 2 * E1 + E2);
+			if (E0 == 0.0f)
+			{
+				Out2 = 0.0f;
+			}
 			/*输出限幅*/
-			if (Out > 100) {Out = 100;}		//限制输出值最大为100
-			if (Out < -100) {Out = -100;}	//限制输出值最小为100
+			if (Out1 > 100) {Out1 = 100;}		//限制输出值最大为100
+			if (Out1 < -100) {Out1 = -100;}	//限制输出值最小为100
 			
+			if (Out2 > 100) {Out2 = 100;}		//限制输出值最大为100
+			if (Out2 < -100) {Out2 = -100;}	//限制输出值最小为100
 			/*执行控制*/
 			/*输出值给到电机PWM*/
 			/*因为此函数的输入范围是-100~100，所以上面输出限幅，需要给Out值限定在-100~100*/
 			
-			Motor1_SetPWM(Out);
-			
+			Motor1_SetPWM(Out1);
+			Motor2_SetPWM(Out2);
 		}
 		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);
 	}
